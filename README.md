@@ -38,7 +38,7 @@ Used to classify whether a disease is contagious based on the symptoms provided.
 
 **Test Results:**
 
-![alt text](image-1.png)
+![alt text](md/image-1.png)
 
 
 ---
@@ -47,13 +47,13 @@ Used to classify whether a disease is contagious based on the symptoms provided.
 
 Used to find the most similar patient previously diagnosed, based on Jaccard similarity. Offers high performance with results comparable to real vector distance.
 
-![alt text](image.png)
+![alt text](md/image.png)
 
 
 ### Bloom Filter
 Used to verify if a user's symptoms match a suspected disease, helping either reassure or alert the user to potential risks.
 
-![alt text](image-3.png)
+![alt text](md/image-3.png)
 
 **Best configuration found**: 3 hash functions (0% false positives with reasonable collision rate)
 
