@@ -1,0 +1,92 @@
+data = readcell('dataset_up.csv');
+
+header = data(1, :); % Cabeçalho das colunas
+data = data(2:end, :); % Dados sem o cabeçalho
+
+% Separar os dados
+patient_ids = data(:, 1); % IDs dos pacientes
+symptoms = cell2mat(data(:, 2:end-3)); % Matriz de sintomas
+sintomas_lista = header(2:end-3); % Nomes dos sintomas
+diseases = data(:, end-1); % Coluna de doenças
+precautions = data(:, end); % Coluna de precauções
+contagious = cell2mat(data(:, end-2)); % Coluna Contagiosa
+
+[N, num_symptoms] = size(symptoms);
+k = 1000; 
+
+% Criar assinaturas MinHash para o dataset
+assinaturas = inf(N, k);
+for i = 1:N
+    for j = 1:num_symptoms
+        if symptoms(i, j) == 1 
+            hash_vals = string2hash_V2(j, k); % Função hash
+            assinaturas(i, :) = min(assinaturas(i, :), hash_vals); % Atualizar a assinatura
+        end
+    end
+end
+
+% Mostrar a lista de sintomas disponíveis
+fprintf('Lista de sintomas disponíveis:\n');
+
+for i = 1:length(sintomas_lista)
+    fprintf('%d. %s\n', i, sintomas_lista{i});
+end
+
+% Solicitar os sintomas ao utilizador
+disp('Digite os nomes dos sintomas que você possui, separados por vírgulas.');
+entrada_usuario = input('Exemplo: itching, skin_rash\n', 's');
+sintomas_usuario = split(strtrim(entrada_usuario), ',');
+sintomas_usuario = strtrim(sintomas_usuario);
+
+% Criar o vetor do novo paciente com base nos sintomas informados
+novo_paciente = zeros(1, num_symptoms);
+erro_detectado = false;
+
+for i = 1:length(sintomas_usuario)
+    idx = find(strcmpi(sintomas_lista, sintomas_usuario{i}));
+    if ~isempty(idx)
+        novo_paciente(idx) = 1;
+    else
+        fprintf('Sintoma "%s" não encontrado na lista.\n', sintomas_usuario{i});
+        erro_detectado = true;
+        break; 
+    end
+end
+
+% Verificar erros na entrada do utilizador
+if erro_detectado
+    disp('Erro: Um ou mais sintomas não são válidos. Tente novamente.');
+    return; 
+end
+
+% Criar a assinatura MinHash para o novo paciente
+novo_assinatura = inf(1, k);
+for j = 1:num_symptoms
+    if novo_paciente(j) == 1
+        hash_vals = string2hash_V2(j, k);
+        novo_assinatura = min(novo_assinatura, hash_vals);
+    end
+end
+
+% Calcular as distâncias MinHash entre o novo paciente e os pacientes do dataset
+distancias = zeros(N, 1);
+for i = 1:N
+    distancias(i) = sum(assinaturas(i, :) ~= novo_assinatura) / k;
+end
+
+% Encontrar o paciente mais similar
+[~, idx_min] = min(distancias);
+similar_patient = idx_min;
+
+% Exibir os resultados do paciente mais similar
+fprintf('Paciente mais similar encontrado:\n');
+fprintf('ID do Paciente: %d\n', patient_ids{similar_patient});
+
+if contagious(similar_patient) == 1
+    fprintf('Contagiosa: Sim\n');
+else
+    fprintf('Contagiosa: Não\n');
+end
+fprintf('Doença: %s\n', diseases{similar_patient});
+fprintf('Precauções: %s\n', precautions{similar_patient});
+

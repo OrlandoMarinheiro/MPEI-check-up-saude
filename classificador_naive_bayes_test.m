@@ -1,0 +1,78 @@
+function [precisao, recall, f1] = classificador_naive_bayes_test(dataset_path)
+    data = readcell(dataset_path);
+    headers = data(1, :);
+    data = data(2:end, :);
+
+    sintomas = headers(2:end-3);
+    X = cell2mat(data(:, 2:end-3));
+    Y = cell2mat(data(:, end-2));
+
+    classes_contagiosa = unique(Y);
+
+
+    
+    aux = randperm(size(X,1));
+    aux2 = round(0.7*size(X,1));
+    
+    Xtreino = X(aux(1:aux2),:);
+    Ytreino = Y(aux(1:aux2));
+    
+    Xteste = X(aux(aux2 + 1:end),:);
+    Yteste = Y(aux(aux2 + 1:end));
+    
+    prob_contagiosa = zeros(1, length(classes_contagiosa));
+    prob_sintoma_dado_contagiosa = zeros(length(sintomas), length(classes_contagiosa));
+
+    for i = 1:length(classes_contagiosa)
+        prob_contagiosa(i) = sum(Ytreino == classes_contagiosa(i)) / length(Ytreino);
+
+        X_classe = Xtreino(Ytreino == classes_contagiosa(i), :);
+        for j = 1:length(sintomas)
+           
+            prob_sintoma_dado_contagiosa(j, i) = (sum(X_classe(:, j) == 1) + 1) / (size(X_classe, 1) + 2);
+        end
+    end
+
+    VP = 0; 
+    FP = 0; 
+    VN = 0; 
+    FN = 0;
+
+    for i = 1:length(Yteste)
+        sintomas_usuario = Xteste(i, :);
+
+        prob_usuario = prob_contagiosa;
+
+        for j = 1:length(classes_contagiosa)
+            for k = 1:length(sintomas)
+                if sintomas_usuario(k) == 1
+                    prob_usuario(j) = prob_usuario(j) * prob_sintoma_dado_contagiosa(k, j);
+                else
+                    prob_usuario(j) = prob_usuario(j) * (1 - prob_sintoma_dado_contagiosa(k, j));
+                end
+            end
+        end
+
+        prob_usuario = prob_usuario / sum(prob_usuario);  
+        [~, previsao] = max(prob_usuario);
+        classe_prevista = classes_contagiosa(previsao);
+
+        if classe_prevista == Yteste(i)
+            if classe_prevista == classes_contagiosa(2)
+                VP = VP + 1;
+            else
+                VN = VN + 1;
+            end
+        else
+            if classe_prevista == classes_contagiosa(2)
+                FP = FP + 1;
+            else
+                FN = FN + 1;
+            end
+        end
+    end
+
+    precisao = VP / (VP + FP);
+    recall = VP / (VP + FN);
+    f1 = 2 * (precisao * recall) / (precisao + recall);
+end
